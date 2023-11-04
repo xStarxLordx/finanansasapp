@@ -58,7 +58,7 @@ const HomeScreen = () => {
       setInputIngresos(Number(ingresos) + Number(inputIngresos));
       setDisponible(Number(ingresos) + Number(disponible));
       if(Number(ingresos)>1){
-        alert("El 20% de tus ingresos es el porcentaje de ahorro más recomendado"+
+        alert("El 20% de tus ingresos es el porcentaje de ahorro más recomendado por expertos,"+
             ' asignaremos este porcentaje para tu ahorro predeterminado, puedes cambiar el porcentaje en la sección de "Ahorro".')
         setAhorroP(20)
         
