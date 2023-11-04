@@ -18,6 +18,7 @@ const HomeScreen = () => {
   const widthAndHeight = 250;
   const [ahorro, setAhorro] = useState("");
   const [ahorroT, setAhorroT] = useState(0);
+  const [ahorroP, setAhorroP] = useState(0);
   const [ingresos, setIngresos] = useState("");
   const [disponible, setDisponible] = useState(0);
   const [alimentacion, setAlimentacion] = useState(0);
@@ -30,9 +31,11 @@ const HomeScreen = () => {
   const [gastosTotales, setGastosTotales] = useState(0);
   const [value, setValue] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [loading1, setLoading1] = useState(false);
   const [fontsLoaded] = useFonts({
     volkor: require("../assets/fonts/Vollkorn/static/Vollkorn-Regular.ttf"),
   });
+  
   function formatNumber(number) {
     return new Intl.NumberFormat("ES-CO", {
       style: "currency",
@@ -49,28 +52,38 @@ const HomeScreen = () => {
     { key: "5", value: "Otros" },
   ];
   const handleEntry = async () => {
-    setLoading(true);
+    setLoading1(true)
     try {
+      
       setInputIngresos(Number(ingresos) + Number(inputIngresos));
-
       setDisponible(Number(ingresos) + Number(disponible));
-
-      alert("Registro exitoso.");
+      if(Number(ingresos)>1){
+        alert("El 20% de tus ingresos es el porcentaje de ahorro más recomendado"+
+            ' asignaremos este porcentaje para tu ahorro predeterminado, puedes cambiar el porcentaje en la sección de "Ahorro".')
+        setAhorroP(20)
+        
+      }
+      
+      //alert("Registro exitoso.");
     } catch (error) {
       console.log(error);
       alert("Error");
     } finally {
-      setLoading(false);
+      
       setIngresos("");
     }
   };
-  const handleAhorro = async () =>{
-    setAhorroT(Number(ahorro)+Number(ahorroT))
-    setDisponible(Number(disponible) - Number(ahorro));
-    setAhorro("")
-  }
+  const handleAhorro = async () => {
+    
+    setAhorroP(ahorro)
+    setAhorroT(Number(inputIngresos)*(Number(ahorro)/100));
+    setDisponible((Number(disponible)+ahorroT)-(Number(inputIngresos)*(Number(ahorro)/100)))
+    if(ahorro<10){
+      alert("Actualmente tu meta de ahorro es menor del 10% que es el mínimo porcentaje de ahorro recomendado para tener un manejo saludable de finanzas personales.")
+    }
+    setAhorro("");
+  };
   const handleSpent = () => {
-    setLoading(true);
     try {
       if (selected != null) {
         setGastosTotales(Number(gastosTotales) + Number(gastos));
@@ -79,7 +92,14 @@ const HomeScreen = () => {
           setHogar(Number(hogar) + Number(gastos));
         }
         if (selected == "Ocio") {
+          console.warn(Number(inputIngresos) * 0.15);
+
           setOcio(Number(ocio) + Number(gastos));
+          setLoading(true);
+          /* if (ocio>(Number(inputIngresos)*0.15)) {
+            alert("El dinero que has gastado en ocio es mayor al 15% de tus ingresos, los expertos recomiendan que para tener"+
+            " un manejo saludable de las finanzas personales el ocio no debe superar el 15% de tus ingresos mensuales.")} */
+          return null;
         }
         if (selected == "Alimentación") {
           setAlimentacion(Number(alimentacion) + Number(gastos));
@@ -90,7 +110,6 @@ const HomeScreen = () => {
         if (selected == "Otros") {
           setOtros(Number(otros) + Number(gastos));
         }
-        alert("Registro exitoso.");
       } else {
         alert("Ingresa categoría de gastos");
       }
@@ -98,7 +117,6 @@ const HomeScreen = () => {
       console.log(error);
       alert("Error");
     } finally {
-      setLoading(false);
       setGastos("");
     }
   };
@@ -106,154 +124,166 @@ const HomeScreen = () => {
     value == true ? setValue(false) : setValue(true);
   };
   if (!fontsLoaded) return null;
+  if (loading == true) {
+    if (ocio > Number(inputIngresos) * 0.15) {
+      alert(
+        'Más del 15% de tus gastos son por concepto de "Ocio" los expertos recomiendan que para tener' +
+          ' un manejo saludable de las finanzas personales el dinero destinado al ocio debe estar entre el 10% y 15% de tus ingresos mensuales.'
+      );
+      setLoading(false);
+      return null;
+    }
+  }
+  if (loading1 == true) {
+      setAhorroT(Number(inputIngresos)*(Number(ahorroP)/100))
+      setDisponible(Number(disponible) - (Number(inputIngresos)*(Number(ahorroP)/100)));
+      setLoading1(false);
+      return null;
+    
+  }
   return (
-    <SafeAreaView style={styles.scrollContainer} >
+    <SafeAreaView style={styles.scrollContainer}>
+      <View>
+        <View style={[{ alignItems: "center" }, { marginTop: 20 }]}>
+          <Text
+            style={[
+              styles.title,
+              { color: "black" },
+              { fontSize: 30 },
+              { textAlign: "center" },
+              { color: "white" },
+            ]}
+          >
+            Balance general
+          </Text>
+        </View>
 
-      <ScrollView>
-      <View style={[{ alignItems: "center" }, { marginTop: 20 }]}>
-        <Text
-          style={[
-            styles.title,
-            { color: "black" },
-            { fontSize: 30 },
-            { textAlign: "center" },
-            { color: "white" },
-          ]}
-        >
-          Balance general
-        </Text>
-      </View>
-      
-      
-        <KeyboardAvoidingView behavior="padding">
-          <ScrollView horizontal>
-            <View style={[styles.container, { padding: 5 }]}>
-            <View style={[styles.container, { padding: 5 }]}>
-                <Text
-                  style={[
-                    { alignSelf: "flex-start" },
-                    { marginStart: 10 },
-                    { fontWeight: "bold" },
-                    { fontSize: 15 },
-                    { marginTop: 8 },
-                    { color: "white" },
-                  ]}
-                >
-                  {" "}
-                  Ingresos: {formatNumber(Number(inputIngresos))}{" "}
+        <ScrollView horizontal>
+          <View style={[styles.container, { padding: 5 }]}>
+          <Text
+                style={[
+                  { alignSelf: "flex-start" },
+                  { marginStart: 10 },
+                  { fontWeight: "bold" },
+                  { fontSize: 15 },
+                  { marginTop: 8 },
+                  { color: "white" },
+                ]}
+              >
+                {" "}
+                Ingresos: {formatNumber(Number(inputIngresos))}{" "}
+              </Text>
+              <Text
+                style={[
+                  { alignSelf: "flex-start" },
+                  { marginStart: 10 },
+                  { fontWeight: "bold" },
+                  { fontSize: 15 },
+                  { marginTop: 8 },
+                  { color: "white" },
+                ]}
+              >
+                {" "}
+                Disponible:{" "}
+                <Text style={{ color: "#57a639" }}>
+                  {formatNumber(Number(disponible))}{" "}
                 </Text>
-                <Text
-                  style={[
-                    { alignSelf: "flex-start" },
-                    { marginStart: 10 },
-                    { fontWeight: "bold" },
-                    { fontSize: 15 },
-                    { marginTop: 8 },
-                    { color: "white" },
-                  ]}
-                >
-                  {" "}
-                  Disponible:{" "}
-                  <Text style={{ color: "#57a639" }}>
-                    {formatNumber(Number(disponible))}{" "}
-                  </Text>
+              </Text>
+              <Text
+                style={[
+                  { alignSelf: "flex-start" },
+                  { marginStart: 10 },
+                  { fontWeight: "bold" },
+                  { fontSize: 15 },
+                  { marginTop: 8 },
+                  { color: "white" },
+                ]}
+              >
+                {" "}
+                Gastos totales:{" "}
+                <Text style={{ color: "#F00" }}>
+                  {formatNumber(Number(gastosTotales))}{" "}
                 </Text>
-                <Text
-                  style={[
-                    { alignSelf: "flex-start" },
-                    { marginStart: 10 },
-                    { fontWeight: "bold" },
-                    { fontSize: 15 },
-                    { marginTop: 8 },
-                    { color: "white" },
-                  ]}
-                >
-                  {" "}
-                  Gastos totales:{" "}
-                  <Text style={{ color: "#F00" }}>
-                    {formatNumber(Number(gastosTotales))}{" "}
-                  </Text>
+              </Text>
+              <Text
+                style={[
+                  { alignSelf: "flex-start" },
+                  { marginStart: 10 },
+                  { fontWeight: "bold" },
+                  { fontSize: 15 },
+                  { marginTop: 8 },
+                  { color: "white" },
+                ]}
+              >
+                {" "}
+                Ahorro:{" "}
+                <Text style={{ color: "#01DFD7" }}>
+                  {formatNumber(Number(ahorroT))}{" "}
                 </Text>
-                <Text
-                  style={[
-                    { alignSelf: "flex-start" },
-                    { marginStart: 10 },
-                    { fontWeight: "bold" },
-                    { fontSize: 15 },
-                    { marginTop: 8 },
-                    { color: "white" },
-                  ]}
-                >
-                  {" "}
-                  Ahorro:{" "}
-                  <Text style={{ color: "#01DFD7" }}>
-                    {formatNumber(Number(ahorroT))}{" "}
-                  </Text>
-                </Text>
-              </View>
-              <PieChart
-                data={[
-                  {
-                    name: "Disponible",
-                    value: disponible,
+              </Text>
+            
+            <PieChart
+              data={[
+                {
+                  name: "Disponible",
+                  value: disponible,
 
-                    color: "#57a639",
-                    legendFontColor: "white",
-                    legendFontSize: 15,
-                  },
-                  {
-                    name: "Gastos totales",
-                    value: gastosTotales,
-                    color: "#F00",
-                    legendFontColor: "white",
-                    legendFontSize: 15,
-                  },
-                   {
-            name: 'Ahorro',
-            value: ahorroT,
-            color: '#01DFD7',
-            legendFontColor: 'white',
-            legendFontSize: 15,
-          },/*
+                  color: "#57a639",
+                  legendFontColor: "white",
+                  legendFontSize: 15,
+                },
+                {
+                  name: "Gastos totales",
+                  value: gastosTotales,
+                  color: "#F00",
+                  legendFontColor: "white",
+                  legendFontSize: 15,
+                },
+                {
+                  name: "Ahorro",
+                  value: ahorroT,
+                  color: "#01DFD7",
+                  legendFontColor: "white",
+                  legendFontSize: 15,
+                } /*
           {
             name: 'Moscow',
             population: 220000,
             color: 'rgb(0, 0, 255)',
             legendFontColor: '#7F7F7F',
             legendFontSize: 15,
-          }, */
-                ]}
-                width={Dimensions.get("window").width - 16}
-                height={220}
-                chartConfig={{
-                  backgroundColor: "#1cc910",
-                  backgroundGradientFrom: "#eff3ff",
-                  backgroundGradientTo: "#efefef",
-                  decimalPlaces: 2,
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  style: {
-                    borderRadius: 16,
-                  },
-                }}
-                style={{
-                  marginVertical: 8,
+          }, */,
+              ]}
+              width={Dimensions.get("window").width - 16}
+              height={220}
+              chartConfig={{
+                backgroundColor: "#1cc910",
+                backgroundGradientFrom: "#eff3ff",
+                backgroundGradientTo: "#efefef",
+                decimalPlaces: 2,
+                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                style: {
                   borderRadius: 16,
-                  borderColor: "black",
-                  borderWidth: 2,
-                }}
-                accessor="value"
-                backgroundColor="grey"
-                paddingLeft="1"
-                //absolute={value}
+                },
+              }}
+              style={{
+                marginVertical: 8,
+                borderRadius: 16,
+                borderColor: "black",
+                borderWidth: 2,
+              }}
+              accessor="value"
+              backgroundColor="grey"
+              paddingLeft="1"
+              absolute={false}
 
-                //For the absolute number else percentage
-              />
-            </View>
-            
-            {gastosTotales==0 ? null : <View style={[styles.container, { padding: 5 }]}>
-              
-              
-                <View style={[styles.container, { padding: 5 }]}>
+              //For the absolute number else percentage
+            />
+          </View>
+
+          {gastosTotales == 0 ? null : (
+            <View style={[styles.container, { padding: 5 }]}>
+              <View style={[styles.container, { padding: 5 }]}>
                 {alimentacion == 0 ? null : (
                   <Text
                     style={[
@@ -272,81 +302,81 @@ const HomeScreen = () => {
                     </Text>
                   </Text>
                 )}
-                  {hogar == 0 ? null : (
-                    <Text
-                      style={[
-                        { alignSelf: "flex-start" },
-                        { marginStart: 10 },
-                        { fontWeight: "bold" },
-                        { fontSize: 15 },
-                        { marginTop: 8 },
-                        { color: "white" },
-                      ]}
-                    >
-                      {" "}
-                      Hogar:{" "}
-                      <Text style={{ color: "#2ECCFA" }}>
-                        {formatNumber(Number(hogar))}{" "}
-                      </Text>
+                {hogar == 0 ? null : (
+                  <Text
+                    style={[
+                      { alignSelf: "flex-start" },
+                      { marginStart: 10 },
+                      { fontWeight: "bold" },
+                      { fontSize: 15 },
+                      { marginTop: 8 },
+                      { color: "white" },
+                    ]}
+                  >
+                    {" "}
+                    Hogar:{" "}
+                    <Text style={{ color: "#2ECCFA" }}>
+                      {formatNumber(Number(hogar))}{" "}
                     </Text>
-                  )}
+                  </Text>
+                )}
 
-                  {ocio == 0 ? null : (
-                    <Text
-                      style={[
-                        { alignSelf: "flex-start" },
-                        { marginStart: 10 },
-                        { fontWeight: "bold" },
-                        { fontSize: 15 },
-                        { marginTop: 8 },
-                        { color: "white" },
-                      ]}
-                    >
-                      {" "}
-                      Ocio:{" "}
-                      <Text style={{ color: "#AC58FA" }}>
-                        {formatNumber(Number(ocio))}{" "}
-                      </Text>
+                {ocio == 0 ? null : (
+                  <Text
+                    style={[
+                      { alignSelf: "flex-start" },
+                      { marginStart: 10 },
+                      { fontWeight: "bold" },
+                      { fontSize: 15 },
+                      { marginTop: 8 },
+                      { color: "white" },
+                    ]}
+                  >
+                    {" "}
+                    Ocio:{" "}
+                    <Text style={{ color: "#AC58FA" }}>
+                      {formatNumber(Number(ocio))}{" "}
                     </Text>
-                  )}
-                  {creditos == 0 ? null : (
-                    <Text
-                      style={[
-                        { alignSelf: "flex-start" },
-                        { marginStart: 10 },
-                        { fontWeight: "bold" },
-                        { fontSize: 15 },
-                        { marginTop: 8 },
-                        { color: "white" },
-                      ]}
-                    >
-                      {" "}
-                      Creditos:{" "}
-                      <Text style={{ color: "#2EFE2E" }}>
-                        {formatNumber(Number(creditos))}{" "}
-                      </Text>
+                  </Text>
+                )}
+                {creditos == 0 ? null : (
+                  <Text
+                    style={[
+                      { alignSelf: "flex-start" },
+                      { marginStart: 10 },
+                      { fontWeight: "bold" },
+                      { fontSize: 15 },
+                      { marginTop: 8 },
+                      { color: "white" },
+                    ]}
+                  >
+                    {" "}
+                    Creditos:{" "}
+                    <Text style={{ color: "#2EFE2E" }}>
+                      {formatNumber(Number(creditos))}{" "}
                     </Text>
-                  )}
-                  {otros == 0 ? null : (
-                    <Text
-                      style={[
-                        { alignSelf: "flex-start" },
-                        { marginStart: 10 },
-                        { fontWeight: "bold" },
-                        { fontSize: 15 },
-                        { marginTop: 8 },
-                        { color: "white" },
-                      ]}
-                    >
-                      {" "}
-                      Otros:{" "}
-                      <Text style={{ color: "#0040FF" }}>
-                        {formatNumber(Number(otros))}{" "}
-                      </Text>
+                  </Text>
+                )}
+                {otros == 0 ? null : (
+                  <Text
+                    style={[
+                      { alignSelf: "flex-start" },
+                      { marginStart: 10 },
+                      { fontWeight: "bold" },
+                      { fontSize: 15 },
+                      { marginTop: 8 },
+                      { color: "white" },
+                    ]}
+                  >
+                    {" "}
+                    Otros:{" "}
+                    <Text style={{ color: "#0040FF" }}>
+                      {formatNumber(Number(otros))}{" "}
                     </Text>
-                  )}
-                </View>
-                <View>
+                  </Text>
+                )}
+              </View>
+              <View>
                 <PieChart
                   data={[
                     {
@@ -412,15 +442,18 @@ const HomeScreen = () => {
                   //For the absolute number else percentage
                 />
               </View>
-            </View>}
-          </ScrollView>
-          {/* <TouchableOpacity onPress={handleValue} style={styles.button}>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+      {/* <TouchableOpacity onPress={handleValue} style={styles.button}>
               <Text style={styles.buttonText}>
                 {" "}
                 {value == true ? "Porcentaje" : "Pesos"}{" "}
               </Text>
             </TouchableOpacity> */}
-
+      <ScrollView>
+        <KeyboardAvoidingView behavior="padding">
           <View style={[styles.inpuContainer, { alignSelf: "center" }]}>
             <Text style={styles.textinput}>Ingresos:</Text>
             <TextInput
@@ -472,13 +505,14 @@ const HomeScreen = () => {
               <Text style={styles.buttonText}> Registrar gastos </Text>
             </TouchableOpacity>
             <Text style={styles.textinput}>Ahorro:</Text>
-            
+
             <TextInput
-              
               placeholderTextColor={"#2E2E2E"}
-              keyboardType="number-pad"
-              placeholder="Ahorro"
+              keyboardType="decimal-pad"
+              placeholder={(ahorroP).toString()+"%"}
+              inputMode="decimal"
               name="ahorro"
+              maxLength={3}
               value={ahorro}
               onChangeText={(text) => {
                 setAhorro(text);

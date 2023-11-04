@@ -38,7 +38,7 @@ const LoginScreen = () => {
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
       console.log(response);
-      console.warn(auth.currentUser.emailVerified)
+      //console.warn(auth.currentUser.emailVerified)
       if(auth.currentUser.emailVerified==true){
         navigation.navigate("Home");
       }
@@ -70,7 +70,7 @@ const LoginScreen = () => {
         // ...
         alert("Correo de verificación enviado, por favor verifica el correo para poder iniciar sesión.");
       });
-      console.warn(auth.currentUser.emailVerified)
+      //console.warn(auth.currentUser.emailVerified)
       console.log(response);
       
       /* navigation.navigate("Home"); */
