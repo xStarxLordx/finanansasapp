@@ -9,19 +9,29 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useFonts } from "expo-font";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TextInput } from "react-native";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, FlatList } from "react-native";
 import Logo from "../assets/images/alcancia-white.png";
-import { FIREBASE_AUTH } from "../firebase";
+import {
+  FIREBASE_AUTH,
+  collection,
+  addDoc,
+  getDocs,
+  FIREBASE_DB,
+  getDoc,
+  doc
+} from "../firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendEmailVerification, getAuth, User
+  sendEmailVerification,
+  getAuth,
+  User,
 } from "firebase/auth";
 import { useNavigation } from "@react-navigation/native";
 const LoginScreen = () => {
-  const {height} = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,27 +39,26 @@ const LoginScreen = () => {
   const navigation = useNavigation();
   const [fontsLoaded] = useFonts({
     volkor: require("../assets/fonts/Vollkorn/static/Vollkorn-Regular.ttf"),
-
-  })
-  
+  });
   const handleSignIn = async () => {
     setLoading(true);
-    
+
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
       console.log(response);
       //console.warn(auth.currentUser.emailVerified)
-      if(auth.currentUser.emailVerified==true){
-        navigation.navigate("Home");
-      }
-      else{
-        alert("Por favor verifica el correo.")
+      if (auth.currentUser.emailVerified == true) {
+        navigation.navigate("Home", {
+          Status: false,
+          user: auth.currentUser.email.toString(),
+        });
+      } else {
+        alert("Por favor verifica el correo.");
       }
     } catch (error) {
       console.log(error);
       alert("Correo o contraseña incorrectos.");
     } finally {
-      
       setLoading(false);
       await setEmail("");
       await setPassword("");
@@ -57,22 +66,23 @@ const LoginScreen = () => {
   };
   const handleSignUp = async () => {
     setLoading(true);
-    
+
     try {
       const response = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
-      sendEmailVerification(auth.currentUser)
-      .then(() => {
+      sendEmailVerification(auth.currentUser).then(() => {
         // Email verification sent!
         // ...
-        alert("Correo de verificación enviado, por favor verifica el correo para poder iniciar sesión.");
+        alert(
+          "Correo de verificación enviado, por favor verifica el correo para poder iniciar sesión."
+        );
       });
       //console.warn(auth.currentUser.emailVerified)
       console.log(response);
-      
+
       /* navigation.navigate("Home"); */
     } catch (error) {
       console.log(error);
@@ -84,24 +94,32 @@ const LoginScreen = () => {
     }
   };
 
-  if(!fontsLoaded) return null;
+  if (!fontsLoaded) return null;
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView >
-          
-          <Text
-            style={[styles.title, { marginTop: 55 }, { alignSelf: "center" },{color:"white"}]}
-          >
-            FinanzasApp
-          </Text>
-          <View >
-          <Image source={Logo} style={[styles.logo,{height: height * 0.35,} ]} resizeMode="contain" />
-          </View>
-          <KeyboardAvoidingView behavior="position">
+      <ScrollView>
+        <Text
+          style={[
+            styles.title,
+            { marginTop: 55 },
+            { alignSelf: "center" },
+            { color: "white" },
+          ]}
+        >
+          FinanzasApp
+        </Text>
+        <View>
+          <Image
+            source={Logo}
+            style={[styles.logo, { height: height * 0.35 }]}
+            resizeMode="contain"
+          />
+        </View>
+        <KeyboardAvoidingView behavior="position">
           <View style={styles.inpuContainer}>
             <TextInput
-            placeholderTextColor={"white"}
+              placeholderTextColor={"white"}
               placeholder="Correo electrónico"
               value={email}
               onChangeText={(text) => setEmail(text)}
@@ -115,7 +133,7 @@ const LoginScreen = () => {
               style={styles.input}
               secureTextEntry
             />
-          
+
             <TouchableOpacity onPress={handleSignIn} style={styles.button}>
               <Text style={styles.buttonText}> Iniciar sesión </Text>
             </TouchableOpacity>
@@ -126,7 +144,7 @@ const LoginScreen = () => {
               <Text style={[styles.buttonOutlineText]}> Registrarse </Text>
             </TouchableOpacity>
           </View>
-          </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
       </ScrollView>
     </SafeAreaView>
   );
@@ -142,10 +160,10 @@ const styles = StyleSheet.create({
   },
   inpuContainer: {
     width: "90%",
-    alignSelf:"center",
-    
+    alignSelf: "center",
+
     padding: 10,
-    flex:1
+    flex: 1,
   },
   input: {
     backgroundColor: "grey",
@@ -156,11 +174,10 @@ const styles = StyleSheet.create({
     borderColor: "black",
     borderRadius: 5,
     borderWidth: 2,
-    
   },
   buttonContainer: {
     width: "80%",
-    alignSelf:"center"
+    alignSelf: "center",
   },
   button: {
     width: "65%",
@@ -187,17 +204,16 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontWeight: "700",
-    fontFamily: 'volkor',
+    fontFamily: "volkor",
   },
   title: {
     fontSize: 30,
     color: "black",
-    fontFamily: 'volkor',
+    fontFamily: "volkor",
   },
   logo: {
     width: "70%",
     marginVertical: 30,
-    alignSelf:"center",
-    
+    alignSelf: "center",
   },
 });

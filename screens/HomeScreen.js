@@ -8,13 +8,27 @@ import {
   SafeAreaView,
   Dimensions,
 } from "react-native";
-import React, { Component, useState } from "react";
+import React, { Component, useState, useEffect } from "react";
 import CurrencyInput from "react-native-currency-input";
 import { PieChart } from "react-native-chart-kit";
 import { useFonts } from "expo-font/build/FontHooks";
 import { SelectList } from "react-native-dropdown-select-list";
-import { KeyboardAvoidingView } from "react-native";
-const HomeScreen = () => {
+import { KeyboardAvoidingView, FlatList } from "react-native";
+import {
+  FIREBASE_APP,
+  FIREBASE_DB,
+  getFirestore,
+  collection,
+  doc,
+  updateDoc,
+  getDocs,
+  getDoc,
+  
+} from "../firebase";
+import { setDoc } from "firebase/firestore";
+
+const HomeScreen = ({ route }) => {
+  const { user } = route.params;
   const widthAndHeight = 250;
   const [ahorro, setAhorro] = useState("");
   const [ahorroT, setAhorroT] = useState(0);
@@ -29,13 +43,41 @@ const HomeScreen = () => {
   const [gastos, setGastos] = useState("");
   const [inputIngresos, setInputIngresos] = useState(0);
   const [gastosTotales, setGastosTotales] = useState(0);
-  const [value, setValue] = useState(true);
+  const [value, setValue] = useState(false);
+  const [wait, setWait] = useState(true);
   const [loading, setLoading] = useState(false);
   const [loading1, setLoading1] = useState(false);
+  const [list, setList] = useState([]);
+  const getData = async () => {
+    const docSnap = await getDoc(doc(collection(FIREBASE_DB, "DATA"), user)); 
+      if(docSnap.exists()){
+        setList(docSnap.data())}     
+        else{
+          return null
+        }  };
+  useEffect(() => {
+    getData();
+    
+  }, []); 
+if(list.user!=null){
+  if (list.user == user && wait == true) {
+    setAhorroP(Number(list.ahorroP))
+    setAhorroT(Number(list.ahorroT))
+    setDisponible(Number(list.disponible))
+    setAlimentacion(Number(list.alimentacion))
+    setCreditos(Number(list.creditos))
+    setGastosTotales(Number(list.gastosTotales))
+    setHogar(Number(list.hogar))
+    setInputIngresos(Number(list.inputIngresos))
+    setOcio(Number(list.ocio))
+    setOtros(Number(list.otros))
+    setWait(false)
+  } 
+}
   const [fontsLoaded] = useFonts({
     volkor: require("../assets/fonts/Vollkorn/static/Vollkorn-Regular.ttf"),
   });
-  
+
   function formatNumber(number) {
     return new Intl.NumberFormat("ES-CO", {
       style: "currency",
@@ -43,7 +85,25 @@ const HomeScreen = () => {
     }).format(number);
   }
   const [selected, setSelected] = useState(null);
-
+  const addData = async () => {
+    try {
+      await setDoc(doc(collection(FIREBASE_DB, "DATA"), user), {
+        ahorroP: ahorroP,
+        ahorroT: ahorroT,
+        inputIngresos: inputIngresos,
+        disponible: disponible,
+        gastosTotales: gastosTotales,
+        ocio: ocio,
+        otros: otros,
+        hogar: hogar,
+        alimentacion: alimentacion,
+        creditos: creditos,
+        user: user,
+      });
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+  };
   const data = [
     { key: "1", value: "Alimentación" },
     { key: "2", value: "Hogar" },
@@ -52,39 +112,49 @@ const HomeScreen = () => {
     { key: "5", value: "Otros" },
   ];
   const handleEntry = async () => {
-    setLoading1(true)
+    setLoading1(true);
     try {
-      
-      setInputIngresos(Number(ingresos) + Number(inputIngresos));
-      setDisponible(Number(ingresos) + Number(disponible));
-      if(Number(ingresos)>1){
-        alert("El 20% de tus ingresos es el porcentaje de ahorro más recomendado por expertos,"+
-            ' asignaremos este porcentaje para tu ahorro predeterminado, puedes cambiar el porcentaje en la sección de "Ahorro".')
-        setAhorroP(20)
-        
+      if (inputIngresos > 0) {
+        setInputIngresos(Number(ingresos) + Number(inputIngresos));
+        setDisponible(Number(ingresos) + Number(disponible));
+      } else {
+        setInputIngresos(Number(ingresos) + Number(inputIngresos));
+        setDisponible(Number(ingresos) + Number(disponible));
+        if (Number(ingresos) > 1) {
+          alert(
+            "El 20% de tus ingresos es el porcentaje de ahorro más recomendado por expertos," +
+              ' asignaremos este porcentaje para tu ahorro predeterminado, puedes cambiar el porcentaje en la sección de "Ahorro".'
+          );
+          setAhorroP(20);
+        }
       }
-      
       //alert("Registro exitoso.");
     } catch (error) {
       console.log(error);
       alert("Error");
     } finally {
-      
       setIngresos("");
     }
   };
   const handleAhorro = async () => {
-    
-    setAhorroP(ahorro)
-    setAhorroT(Number(inputIngresos)*(Number(ahorro)/100));
-    setDisponible((Number(disponible)+ahorroT)-(Number(inputIngresos)*(Number(ahorro)/100)))
-    if(ahorro<10){
-      alert("Actualmente tu meta de ahorro es menor del 10% que es el mínimo porcentaje de ahorro recomendado para tener un manejo saludable de finanzas personales.")
+    setLoading1(true);
+    setAhorroP(ahorro);
+    setAhorroT(Number(inputIngresos) * (Number(ahorro) / 100));
+    setDisponible(
+      Number(disponible) +
+        ahorroT -
+        Number(inputIngresos) * (Number(ahorro) / 100)
+    );
+    if (ahorro < 10) {
+      alert(
+        "Actualmente tu meta de ahorro es menor del 10% que es el mínimo porcentaje de ahorro recomendado para tener un manejo saludable de finanzas personales."
+      );
     }
     setAhorro("");
   };
   const handleSpent = () => {
     try {
+      setLoading1(true);
       if (selected != null) {
         setGastosTotales(Number(gastosTotales) + Number(gastos));
         setDisponible(Number(disponible) - Number(gastos));
@@ -92,8 +162,6 @@ const HomeScreen = () => {
           setHogar(Number(hogar) + Number(gastos));
         }
         if (selected == "Ocio") {
-          console.warn(Number(inputIngresos) * 0.15);
-
           setOcio(Number(ocio) + Number(gastos));
           setLoading(true);
           /* if (ocio>(Number(inputIngresos)*0.15)) {
@@ -120,27 +188,43 @@ const HomeScreen = () => {
       setGastos("");
     }
   };
-  const handleValue = () => {
+  if(disponible<0&&ahorroT>0){
+    setAhorroT(ahorroT+disponible)
+    setDisponible(0)
+    setAhorroP((ahorroT/inputIngresos)*100)
+    return null
+  }
+ /*  const handleValue = () => {
     value == true ? setValue(false) : setValue(true);
-  };
+  }; */
   if (!fontsLoaded) return null;
   if (loading == true) {
     if (ocio > Number(inputIngresos) * 0.15) {
       alert(
         'Más del 15% de tus gastos son por concepto de "Ocio" los expertos recomiendan que para tener' +
-          ' un manejo saludable de las finanzas personales el dinero destinado al ocio debe estar entre el 10% y 15% de tus ingresos mensuales.'
+          " un manejo saludable de las finanzas personales el dinero destinado al ocio debe estar entre el 10% y 15% de tus ingresos mensuales."
       );
       setLoading(false);
       return null;
     }
   }
   if (loading1 == true) {
-      setAhorroT(Number(inputIngresos)*(Number(ahorroP)/100))
-      setDisponible(Number(disponible) - (Number(inputIngresos)*(Number(ahorroP)/100)));
-      setLoading1(false);
-      return null;
-    
+    setAhorroT(Number(inputIngresos) * (Number(ahorroP) / 100));
+    setDisponible(
+      Number(disponible) +
+        Number(ahorroT) -
+        Number(inputIngresos) * (Number(ahorroP) / 100)
+    );
+    setLoading1(false);
+    setValue(true);
+    return null;
   }
+  if (value == true) {
+    setValue(false);
+    addData();
+    return null;
+  }
+  
   return (
     <SafeAreaView style={styles.scrollContainer}>
       <View>
@@ -160,68 +244,68 @@ const HomeScreen = () => {
 
         <ScrollView horizontal>
           <View style={[styles.container, { padding: 5 }]}>
-          <Text
-                style={[
-                  { alignSelf: "flex-start" },
-                  { marginStart: 10 },
-                  { fontWeight: "bold" },
-                  { fontSize: 15 },
-                  { marginTop: 8 },
-                  { color: "white" },
-                ]}
-              >
-                {" "}
-                Ingresos: {formatNumber(Number(inputIngresos))}{" "}
+            <Text
+              style={[
+                { alignSelf: "flex-start" },
+                { marginStart: 10 },
+                { fontWeight: "bold" },
+                { fontSize: 15 },
+                { marginTop: 8 },
+                { color: "white" },
+              ]}
+            >
+              {" "}
+              Ingresos: {formatNumber(Number(inputIngresos))}{" "}
+            </Text>
+            <Text
+              style={[
+                { alignSelf: "flex-start" },
+                { marginStart: 10 },
+                { fontWeight: "bold" },
+                { fontSize: 15 },
+                { marginTop: 8 },
+                { color: "white" },
+              ]}
+            >
+              {" "}
+              Disponible:{" "}
+              <Text style={{ color: "#57a639" }}>
+                {formatNumber(Number(disponible))}{" "}
               </Text>
-              <Text
-                style={[
-                  { alignSelf: "flex-start" },
-                  { marginStart: 10 },
-                  { fontWeight: "bold" },
-                  { fontSize: 15 },
-                  { marginTop: 8 },
-                  { color: "white" },
-                ]}
-              >
-                {" "}
-                Disponible:{" "}
-                <Text style={{ color: "#57a639" }}>
-                  {formatNumber(Number(disponible))}{" "}
-                </Text>
+            </Text>
+            <Text
+              style={[
+                { alignSelf: "flex-start" },
+                { marginStart: 10 },
+                { fontWeight: "bold" },
+                { fontSize: 15 },
+                { marginTop: 8 },
+                { color: "white" },
+              ]}
+            >
+              {" "}
+              Gastos totales:{" "}
+              <Text style={{ color: "#F00" }}>
+                {formatNumber(Number(gastosTotales))}{" "}
               </Text>
-              <Text
-                style={[
-                  { alignSelf: "flex-start" },
-                  { marginStart: 10 },
-                  { fontWeight: "bold" },
-                  { fontSize: 15 },
-                  { marginTop: 8 },
-                  { color: "white" },
-                ]}
-              >
-                {" "}
-                Gastos totales:{" "}
-                <Text style={{ color: "#F00" }}>
-                  {formatNumber(Number(gastosTotales))}{" "}
-                </Text>
+            </Text>
+            <Text
+              style={[
+                { alignSelf: "flex-start" },
+                { marginStart: 10 },
+                { fontWeight: "bold" },
+                { fontSize: 15 },
+                { marginTop: 8 },
+                { color: "white" },
+              ]}
+            >
+              {" "}
+              Ahorro:{" "}
+              <Text style={{ color: "#01DFD7" }}>
+                {formatNumber(Number(ahorroT))}{" "}
               </Text>
-              <Text
-                style={[
-                  { alignSelf: "flex-start" },
-                  { marginStart: 10 },
-                  { fontWeight: "bold" },
-                  { fontSize: 15 },
-                  { marginTop: 8 },
-                  { color: "white" },
-                ]}
-              >
-                {" "}
-                Ahorro:{" "}
-                <Text style={{ color: "#01DFD7" }}>
-                  {formatNumber(Number(ahorroT))}{" "}
-                </Text>
-              </Text>
-            
+            </Text>
+
             <PieChart
               data={[
                 {
@@ -509,7 +593,7 @@ const HomeScreen = () => {
             <TextInput
               placeholderTextColor={"#2E2E2E"}
               keyboardType="decimal-pad"
-              placeholder={(ahorroP).toString()+"%"}
+              placeholder={ahorroP.toString() + "%"}
               inputMode="decimal"
               name="ahorro"
               maxLength={3}
