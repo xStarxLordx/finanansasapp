@@ -15,12 +15,7 @@ import { TouchableOpacity, FlatList } from "react-native";
 import Logo from "../assets/images/alcancia-white.png";
 import {
   FIREBASE_AUTH,
-  collection,
-  addDoc,
-  getDocs,
-  FIREBASE_DB,
-  getDoc,
-  doc
+  
 } from "../firebase";
 import {
   createUserWithEmailAndPassword,
